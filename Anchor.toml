@@ -1,0 +1,15 @@
+[features]
+seeds = false
+skip-lint = false
+[programs.localnet]
+anchor = "4uQCwRedvUN48pcaC2dUs5nF5PdRkRHR3ZrNsrscSfVq"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "https://holy-autumn-daylight.solana-devnet.quiknode.pro/f79aa971b5e5d9b72f0e1b55109dabed8d0b98a8/"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
