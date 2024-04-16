@@ -28,6 +28,15 @@ const adminWallet = anchor.web3.Keypair.fromSecretKey(
   Uint8Array.from(privateKey)
 );
 
+const userPrivKey = [
+  13, 174, 241, 105, 110, 239, 120, 156, 225, 229, 130, 56, 108, 252, 249, 86,
+  15, 136, 204, 8, 33, 109, 197, 18, 137, 104, 99, 219, 114, 75, 69, 202, 83,
+  137, 128, 85, 238, 147, 245, 120, 56, 39, 15, 44, 117, 11, 134, 240, 63, 31,
+  7, 160, 40, 247, 0, 234, 228, 146, 202, 161, 27, 59, 137, 42,
+];
+
+const person = anchor.web3.Keypair.fromSecretKey(Uint8Array.from(userPrivKey));
+
 describe("extension_nft", () => {
   // devnet test
   const commitment: Commitment = "confirmed";
@@ -47,7 +56,7 @@ describe("extension_nft", () => {
   anchor.setProvider(provider);
 
   const programId = new PublicKey(
-    "4uQCwRedvUN48pcaC2dUs5nF5PdRkRHR3ZrNsrscSfVq" // contract address
+    "AeEcjMnNVAp78y6eBRcA7t3aUZv7xi9MqdEKXJxuMTAY" // contract address
     // "H31ofLpWqeAzF2Pg54HSPQGYifJad843tTJg8vCYVoh3" // contract address
     // "3RYspzrQVuFQVM8X2nizdHKncftaENduHyLzADkN7oag" // contract address
   ); // call this contract in this test script
@@ -58,18 +67,67 @@ describe("extension_nft", () => {
   // const program = anchor.workspace.ExtensionNft as Program<ExtensionNft>;
   const payer = provider.wallet as anchor.Wallet;
 
+  // it("Init admin!", async () => {
+  //   let adminState = await anchor.web3.PublicKey.findProgramAddress(
+  //     [Buffer.from("admin_state")],
+  //     program.programId
+  //   );
+
+  //   try {
+  //     let tx = await program.methods
+  //       .initAdmin(new anchor.BN(1000))
+  //       .accounts({
+  //         admin: payer.publicKey,
+  //         adminState: adminState[0],
+  //         systemProgram: anchor.web3.SystemProgram.programId,
+  //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+  //       })
+  //       .signers([])
+  //       .rpc({ skipPreflight: true });
+
+  //     console.log("Init admin tx", tx);
+  //     await anchor.getProvider().connection.confirmTransaction(tx, "confirmed");
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  // });
+
+  // it("Update admin!", async () => {
+  //   let adminState = await anchor.web3.PublicKey.findProgramAddress(
+  //     [Buffer.from("admin_state")],
+  //     program.programId
+  //   );
+
+  //   try {
+  //     let tx = await program.methods
+  //       .updateAdminInfo(new anchor.BN(1000000))
+  //       .accounts({
+  //         admin: payer.publicKey,
+  //         adminState: adminState[0],
+  //         newAdmin: payer.publicKey,
+  //       })
+  //       .signers([])
+  //       .rpc({ skipPreflight: true });
+
+  //     console.log("Update admin tx", tx);
+  //     await anchor.getProvider().connection.confirmTransaction(tx, "confirmed");
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  // });
+
   it("Mint nft!", async () => {
     const balance = await anchor
       .getProvider()
-      .connection.getBalance(payer.publicKey);
+      .connection.getBalance(person.publicKey);
 
-    console.log(payer.publicKey.toString(), " has ", balance);
+    console.log(person.publicKey.toString(), " has ", balance);
 
     if (balance < 1e8) {
       console.log("Need to get airdrop sol");
       // const res = await anchor
       //   .getProvider()
-      //   .connection.requestAirdrop(payer.publicKey, 1e9);
+      //   .connection.requestAirdrop(person.publicKey, 1e9);
       // await anchor
       //   .getProvider()
       //   .connection.confirmTransaction(res, "confirmed");
@@ -80,14 +138,14 @@ describe("extension_nft", () => {
 
     const destinationTokenAccount = getAssociatedTokenAddressSync(
       mint.publicKey,
-      payer.publicKey,
+      person.publicKey,
       false,
       TOKEN_2022_PROGRAM_ID,
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
-    const nft_authority = await PublicKey.findProgramAddress(
-      [Buffer.from("nft_authority")],
+    let adminState = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from("admin_state")],
       program.programId
     );
 
@@ -99,16 +157,17 @@ describe("extension_nft", () => {
           "https://arweave.net/MHK3Iopy0GgvDoM7LkkiAdg7pQqExuuWvedApCnzfj0"
         )
         .accounts({
-          signer: payer.publicKey,
+          signer: person.publicKey,
           systemProgram: anchor.web3.SystemProgram.programId,
           tokenProgram: TOKEN_2022_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
           tokenAccount: destinationTokenAccount,
           mint: mint.publicKey,
-          nftAuthority: nft_authority[0],
+          adminState: adminState[0],
+          admin: payer.publicKey,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
-        .signers([mint])
+        .signers([mint, person])
         .rpc({ skipPreflight: true });
 
       console.log("Mint nft tx", tx);
