@@ -149,6 +149,11 @@ describe("extension_nft", () => {
       program.programId
     );
 
+    let userState = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from("user_state"), person.publicKey.toBuffer()],
+      program.programId
+    );
+
     try {
       let tx = await program.methods
         .mintNft(
@@ -164,6 +169,71 @@ describe("extension_nft", () => {
           tokenAccount: destinationTokenAccount,
           mint: mint.publicKey,
           adminState: adminState[0],
+          userState: userState[0],
+          admin: payer.publicKey,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        })
+        .signers([mint, person])
+        .rpc({ skipPreflight: true });
+
+      console.log("Mint nft tx", tx);
+      await anchor.getProvider().connection.confirmTransaction(tx, "confirmed");
+    } catch (err) {
+      console.log(err);
+    }
+  });
+
+  it("Mint new nft and burn old one!", async () => {
+    let userState = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from("user_state"), person.publicKey.toBuffer()],
+      program.programId
+    );
+    const userStateAccount = await program.account.userState.fetch(
+      userState[0]
+    );
+    let mint = new Keypair();
+    console.log("Mint public key", mint.publicKey.toBase58());
+
+    const destinationTokenAccount = getAssociatedTokenAddressSync(
+      mint.publicKey,
+      person.publicKey,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    let adminState = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from("admin_state")],
+      program.programId
+    );
+
+    const oldMint = userStateAccount.nftAddress;
+    const oldTokenAccount = getAssociatedTokenAddressSync(
+      oldMint,
+      person.publicKey,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    try {
+      let tx = await program.methods
+        .burnAndMintNewNft(
+          "VIERBORI",
+          "VIER",
+          "https://arweave.net/MHK3Iopy0GgvDoM7LkkiAdg7pQqExuuWvedApCnzfj0"
+        )
+        .accounts({
+          signer: person.publicKey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          tokenProgram: TOKEN_2022_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
+          oldMint,
+          oldTokenAccount,
+          tokenAccount: destinationTokenAccount,
+          mint: mint.publicKey,
+          adminState: adminState[0],
+          userState: userState[0],
           admin: payer.publicKey,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
