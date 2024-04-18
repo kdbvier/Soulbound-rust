@@ -223,6 +223,16 @@ pub mod anchor {
                 ctx.accounts.admin.to_account_info(),
             ],
         )?;
+        // **ctx
+        //     .accounts
+        //     .signer
+        //     .to_account_info()
+        //     .try_borrow_mut_lamports()? -= ctx.accounts.admin_state.mint_fee;
+        // **ctx
+        //     .accounts
+        //     .admin
+        //     .to_account_info()
+        //     .try_borrow_mut_lamports()? += ctx.accounts.admin_state.mint_fee;
 
         // store user's info - nft address
         ctx.accounts.user_state.nft_address = ctx.accounts.mint.key();
@@ -450,7 +460,7 @@ pub struct MintNft<'info> {
         init_if_needed,
         seeds = [b"user_state".as_ref(), signer.key().as_ref()],
         bump,
-        payer = admin,
+        payer = signer,
         space = UserState::space()
     )]
     pub user_state: Box<Account<'info, UserState>>,
